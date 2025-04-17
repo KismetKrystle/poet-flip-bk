@@ -1,57 +1,450 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <meta charset="utf-8">
-  <title>Flipbook with Audio</title>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/turn.js/4.1.0/turn.min.css" />
-  <style>
-    body { background: #333; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
-    #flipbook { width: 800px; height: 525px; }
-    .page { background-size: cover; position: relative; }
-    audio { position: absolute; bottom: 10px; left: 10px; width: 95%; }
-  </style>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Poetry Flipbook with Audio</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <style>
+        body {
+            background: #333;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            font-family: Arial, sans-serif;
+        }
+        
+        #flipbook-container {
+            width: 90%;
+            height: 90vh;
+            position: relative;
+            margin: auto;
+        }
+        
+        #flipbook {
+            width: 100%;
+            height: 100%;
+        }
+        
+        .hard {
+            background: #000;
+            color: white;
+            text-align: center;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .page {
+            background-color: white;
+            background-size: contain;
+            background-position: center;
+            background-repeat: no-repeat;
+            position: relative;
+        }
+        
+        .page-content {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        
+        .audio-controls {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 80%;
+            background-color: rgba(0, 0, 0, 0.5);
+            border-radius: 10px;
+            padding: 10px;
+        }
+        
+        audio {
+            width: 100%;
+        }
+        
+        .page-number {
+            position: absolute;
+            bottom: 10px;
+            font-size: 12px;
+            color: #888;
+        }
+        
+        .left-page .page-number {
+            right: 10px;
+        }
+        
+        .right-page .page-number {
+            left: 10px;
+        }
+
+        /* Navigation buttons */
+        .nav-button {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            background: rgba(0,0,0,0.5);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            font-size: 20px;
+            cursor: pointer;
+            z-index: 999;
+        }
+        
+        #prev-btn {
+            left: 10px;
+        }
+        
+        #next-btn {
+            right: 10px;
+        }
+        
+        /* Loading screen */
+        #loading {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #333;
+            color: white;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+        }
+        
+        /* Shadow effect for pages */
+        .shadow {
+            box-shadow: 0 0 20px rgba(0,0,0,0.5);
+        }
+    </style>
 </head>
 <body>
-  <div id="flipbook">
-    <div class="page" style="background-image: url('pages/page12.jpg')"></div>
-    <div class="page" style="background-image: url('pages/page13.jpg')"></div>
-  </div>
+    <div id="loading">Loading your poetry book...</div>
+    
+    <div id="flipbook-container">
+        <button id="prev-btn" class="nav-button">←</button>
+        <div id="flipbook"></div>
+        <button id="next-btn" class="nav-button">→</button>
+    </div>
 
-  <audio id="audio12" controls>
-    <source src="audio/page12.mp3" type="audio/mpeg">
-  </audio>
-  <audio id="audio13" controls style="display:none;">
-    <source src="audio/page13.mp3" type="audio/mpeg">
-  </audio>
+    <script>
+        // Page configuration - actual content with poems and titles
+        const pages = [
+            // Cover
+            { type: 'hard', content: 'Poetry Collection', bgColor: '#b71c1c' },
 
-  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/turn.js/4.1.0/turn.min.js"></script>
-  <script>
-    $('#flipbook').turn({
-      width: 800,
-      height: 525,
-      autoCenter: true,
-      when: {
-        turning: function(event, page, view) {
-          // Stop all audios
-          document.getElementById('audio12').pause();
-          document.getElementById('audio12').currentTime = 0;
-          document.getElementById('audio13').pause();
-          document.getElementById('audio13').currentTime = 0;
+            // Poetry pages
+            { 
+                id: 12, 
+                image: 'pages/page12.jpg', 
+                audio: 'audio/page12.mp3',
+              
+            },
+            { 
+                id: 13, 
+                image: 'pages/page13.jpg', 
+                audio: 'audio/page13.mp3',
+                
+            },
+            { 
+                id: 14, 
+                image: 'pages/page14.jpg', 
+                audio: 'audio/page14.mp3',
+            },
+            { 
+                id: 15, 
+                image: 'pages/page15.jpg', 
+                audio: 'audio/page15.mp3',
+            },
+            // Back pages
+            { type: 'hard', content: 'Thank You For Reading', bgColor: '#4a148c' },
+            { type: 'hard', content: '', bgColor: '#000' }
+        ];
+        
+        // Audio players registry
+        const audioPlayers = {};
+        
+        // Function to create all pages
+        function createPages() {
+            $('#flipbook').empty();
+            
+            pages.forEach((page, index) => {
+                if (page.type === 'hard') {
+                    // Create hard cover pages
+                    const hardPage = $('<div>', {
+                        class: 'hard',
+                        css: { backgroundColor: page.bgColor || '#000' }
+                    }).append(
+                        $('<div>', {
+                            class: 'page-content',
+                            html: `<h1>${page.content}</h1>`
+                        })
+                    );
+                    
+                    $('#flipbook').append(hardPage);
+                } else {
+                    // Create content pages
+                    const pageClass = index % 2 === 0 ? 'left-page' : 'right-page';
+                    
+                    // Create page div - try background image first, fall back to styled content
+                    const pageDiv = $('<div>', {
+                        class: `page ${pageClass}`,
+                        'data-page-id': page.id
+                    });
+                    
+                    // Try to preload image
+                    const img = new Image();
+                    img.onload = function() {
+                        pageDiv.css('background-image', `url('${page.image}')`);
+                    };
+                    img.onerror = function() {
+                        // If image fails, create styled content
+                        pageDiv.css({
+                            'background-image': 'none',
+                            'background-color': 'white'
+                        });
+                    };
+                    img.src = page.image;
 
-          // Show and play the correct audio
-          if (page == 1 || page == 2) {
-            document.getElementById('audio12').style.display = 'block';
-            document.getElementById('audio13').style.display = 'none';
-            document.getElementById('audio12').play();
-          } else if (page == 3 || page == 4) {
-            document.getElementById('audio12').style.display = 'none';
-            document.getElementById('audio13').style.display = 'block';
-            document.getElementById('audio13').play();
-          }
+                    // Create content container
+                    const contentDiv = $('<div>', {
+                        class: 'page-content'
+                    });
+                    
+                    // Add title if available
+                    if (page.title) {
+                        contentDiv.append(
+                            $('<h2>', {
+                                text: page.title,
+                                css: {
+                                    'text-align': 'center',
+                                    'margin-bottom': '20px'
+                                }
+                            })
+                        );
+                    }
+                    
+                    // Add poem content with proper formatting
+                    if (page.content) {
+                        const poemText = $('<div>', {
+                            css: {
+                                'white-space': 'pre-line',
+                                'text-align': 'center',
+                                'font-family': 'Georgia, serif',
+                                'font-size': '16px',
+                                'line-height': '1.6'
+                            },
+                            text: page.content
+                        });
+                        
+                        contentDiv.append(poemText);
+                    }
+                    
+                                    
+                    pageDiv.append(contentDiv);
+                    
+                    // Create audio controls if audio file exists
+                    if (page.audio) {
+                        const audioControls = $('<div>', {
+                            class: 'audio-controls',
+                            id: `controls-${page.id}`
+                        });
+                        
+                        const audio = $('<audio>', {
+                            controls: true,
+                            id: `audio-${page.id}`
+                        });
+                        
+                        $('<source>', {
+                            src: page.audio,
+                            type: 'audio/mpeg'
+                        }).appendTo(audio);
+                        
+                        audio.appendTo(audioControls);
+                        audioControls.appendTo(pageDiv);
+                        
+                        // Store reference to audio player
+                        audioPlayers[page.id] = audio[0];
+                    }
+                    
+                    $('#flipbook').append(pageDiv);
+                }
+            });
         }
-      }
-    });
-  </script>
+        
+        // Function to initialize the flipbook
+        function initializeFlipbook() {
+            try {
+                // First create the pages
+                createPages();
+                
+                // Initialize turn.js
+                $('#flipbook').turn({
+                    width: $('#flipbook-container').width() * 0.9,
+                    height: $('#flipbook-container').height() * 0.9,
+                    elevation: 50,
+                    gradients: true,
+                    autoCenter: true,
+                    display: 'double',
+                    acceleration: true,
+                    page: 2, // Start at page 2 (first poem)
+                    when: {
+                        turning: function(event, page, view) {
+                            // Stop all audio when turning page
+                            Object.values(audioPlayers).forEach(player => {
+                                player.pause();
+                                player.currentTime = 0;
+                                player.onended = null;
+                            });
+                        },
+                        turned: function(event, page, view) {
+                            playVisiblePagesAudio(view);
+                            
+                            // Update navigation buttons
+                            updateNavButtons();
+                        }
+                    }
+                });
+                
+                // Function to play audio for visible pages
+                function playVisiblePagesAudio(view) {
+                    // Hide all audio controls first
+                    $('.audio-controls').hide();
+                    
+                    // Show audio controls for visible pages
+                    view.forEach(pageNum => {
+                        // Get the actual page data (accounting for cover pages)
+                        const actualIndex = pageNum - 1;
+                        if (actualIndex >= 0 && actualIndex < pages.length && pages[actualIndex].id) {
+                            const pageId = pages[actualIndex].id;
+                            $(`#controls-${pageId}`).show();
+                        }
+                    });
+                    
+                    // Play audio for the left page (if available)
+                    const leftPageNum = view[0] - 1;
+                    if (leftPageNum >= 0 && leftPageNum < pages.length && pages[leftPageNum].id) {
+                        const leftPageId = pages[leftPageNum].id;
+                        const leftAudio = audioPlayers[leftPageId];
+                        
+                        if (leftAudio) {
+                            leftAudio.play().catch(e => console.warn("Audio play error:", e));
+                            
+                            // When left page audio ends, play right page audio
+                            const rightPageNum = view[1] - 1;
+                            if (rightPageNum >= 0 && rightPageNum < pages.length && pages[rightPageNum].id) {
+                                const rightPageId = pages[rightPageNum].id;
+                                const rightAudio = audioPlayers[rightPageId];
+                                
+                                if (rightAudio) {
+                                    leftAudio.onended = function() {
+                                        rightAudio.play().catch(e => console.warn("Audio play error:", e));
+                                    };
+                                }
+                            }
+                        }
+                    }
+                }
+                
+                // Navigation buttons
+                $('#prev-btn').click(function() {
+                    $('#flipbook').turn('previous');
+                });
+                
+                $('#next-btn').click(function() {
+                    $('#flipbook').turn('next');
+                });
+                
+                // Update navigation buttons visibility
+                function updateNavButtons() {
+                    const currentPage = $('#flipbook').turn('page');
+                    const totalPages = $('#flipbook').turn('pages');
+                    
+                    // Show/hide previous button
+                    if (currentPage <= 1) {
+                        $('#prev-btn').hide();
+                    } else {
+                        $('#prev-btn').show();
+                    }
+                    
+                    // Show/hide next button
+                    if (currentPage >= totalPages) {
+                        $('#next-btn').hide();
+                    } else {
+                        $('#next-btn').show();
+                    }
+                }
+                
+                // Initial play for visible pages
+                setTimeout(function() {
+                    const view = $('#flipbook').turn('view');
+                    playVisiblePagesAudio(view);
+                    updateNavButtons();
+                    $('#loading').fadeOut();
+                }, 1000);
+                
+                // Handle window resize
+                $(window).resize(function() {
+                    // Resize the flipbook proportionally
+                    $('#flipbook').turn('size', 
+                        $('#flipbook-container').width() * 0.9,
+                        $('#flipbook-container').height() * 0.9
+                    );
+                });
+                
+            } catch (error) {
+                console.error("Error initializing flipbook:", error);
+                $('#loading').html("Error loading flipbook: " + error.message);
+            }
+        }
+        
+        // Load turn.js dynamically
+        $.getScript("https://cdnjs.cloudflare.com/ajax/libs/turn.js/4.1.0/turn.min.js")
+            .done(function() {
+                // When Turn.js loads successfully, initialize the flipbook
+                $(document).ready(function() {
+                    setTimeout(initializeFlipbook, 500);
+                });
+            })
+            .fail(function() {
+                // If CDN fails, try loading from GitHub
+                $.ajax({
+                    url: 'https://raw.githubusercontent.com/blasten/turn.js/master/turn.js',
+                    dataType: 'text',
+                    success: function(data) {
+                        // Create script element with the Turn.js code
+                        const script = document.createElement('script');
+                        script.textContent = data;
+                        document.body.appendChild(script);
+                        
+                        // Initialize after ensuring the script is loaded
+                        setTimeout(initializeFlipbook, 500);
+                    },
+                    error: function() {
+                        // If all attempts fail, show error
+                        $('#loading').html("Failed to load Turn.js library. Please download it manually.");
+                    }
+                });
+            });
+    </script>
 </body>
 </html>
