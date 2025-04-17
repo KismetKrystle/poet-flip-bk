@@ -6,22 +6,22 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/turn.js/4.1.0/turn.min.css" />
   <style>
     body { background: #333; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
-    #flipbook { width: 800px; height: 500px; }
+    #flipbook { width: 800px; height: 525px; }
     .page { background-size: cover; position: relative; }
     audio { position: absolute; bottom: 10px; left: 10px; width: 95%; }
   </style>
 </head>
 <body>
   <div id="flipbook">
-    <div class="page" style="background-image: url('pages/page1.jpg')"></div>
-    <div class="page" style="background-image: url('pages/page2.jpg')"></div>
+    <div class="page" style="background-image: url('pages/page12.jpg')"></div>
+    <div class="page" style="background-image: url('pages/page13.jpg')"></div>
   </div>
 
-  <audio id="audio1" controls>
-    <source src="audio/page1.mp3" type="audio/mpeg">
+  <audio id="audio12" controls>
+    <source src="audio/page12.mp3" type="audio/mpeg">
   </audio>
-  <audio id="audio2" controls style="display:none;">
-    <source src="audio/page2.mp3" type="audio/mpeg">
+  <audio id="audio13" controls style="display:none;">
+    <source src="audio/page13.mp3" type="audio/mpeg">
   </audio>
 
   <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
@@ -29,25 +29,25 @@
   <script>
     $('#flipbook').turn({
       width: 800,
-      height: 500,
+      height: 525,
       autoCenter: true,
       when: {
         turning: function(event, page, view) {
           // Stop all audios
-          document.getElementById('audio1').pause();
-          document.getElementById('audio1').currentTime = 0;
-          document.getElementById('audio2').pause();
-          document.getElementById('audio2').currentTime = 0;
+          document.getElementById('audio12').pause();
+          document.getElementById('audio12').currentTime = 0;
+          document.getElementById('audio13').pause();
+          document.getElementById('audio13').currentTime = 0;
 
           // Show and play the correct audio
           if (page == 1 || page == 2) {
-            document.getElementById('audio1').style.display = 'block';
-            document.getElementById('audio2').style.display = 'none';
-            document.getElementById('audio1').play();
+            document.getElementById('audio12').style.display = 'block';
+            document.getElementById('audio13').style.display = 'none';
+            document.getElementById('audio12').play();
           } else if (page == 3 || page == 4) {
-            document.getElementById('audio1').style.display = 'none';
-            document.getElementById('audio2').style.display = 'block';
-            document.getElementById('audio2').play();
+            document.getElementById('audio12').style.display = 'none';
+            document.getElementById('audio13').style.display = 'block';
+            document.getElementById('audio13').play();
           }
         }
       }
