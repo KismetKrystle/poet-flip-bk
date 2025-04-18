@@ -1,450 +1,806 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Poetry Flipbook with Audio</title>
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    <style>
-        body {
-            background: #333;
-            margin: 0;
-            padding: 0;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            font-family: Arial, sans-serif;
-        }
-        
-        #flipbook-container {
-            width: 90%;
-            height: 90vh;
-            position: relative;
-            margin: auto;
-        }
-        
-        #flipbook {
-            width: 100%;
-            height: 100%;
-        }
-        
-        .hard {
-            background: #000;
-            color: white;
-            text-align: center;
-            font-weight: bold;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        
-        .page {
-            background-color: white;
-            background-size: contain;
-            background-position: center;
-            background-repeat: no-repeat;
-            position: relative;
-        }
-        
-        .page-content {
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            padding: 20px;
-            box-sizing: border-box;
-        }
-        
-        .audio-controls {
-            position: absolute;
-            bottom: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 80%;
-            background-color: rgba(0, 0, 0, 0.5);
-            border-radius: 10px;
-            padding: 10px;
-        }
-        
-        audio {
-            width: 100%;
-        }
-        
-        .page-number {
-            position: absolute;
-            bottom: 10px;
-            font-size: 12px;
-            color: #888;
-        }
-        
-        .left-page .page-number {
-            right: 10px;
-        }
-        
-        .right-page .page-number {
-            left: 10px;
-        }
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Poetry Flipbook with Audio</title>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<!-- Local turn.js reference - you'll need to download this file -->
+<script src="js/turn.min.js"></script>
+<style>
+body {
+  background: #333;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  font-family: Arial, sans-serif;
+}
 
-        /* Navigation buttons */
-        .nav-button {
-            position: absolute;
-            top: 50%;
-            transform: translateY(-50%);
-            background: rgba(0,0,0,0.5);
-            color: white;
-            border: none;
-            border-radius: 50%;
-            width: 40px;
-            height: 40px;
-            font-size: 20px;
-            cursor: pointer;
-            z-index: 999;
-        }
-        
-        #prev-btn {
-            left: 10px;
-        }
-        
-        #next-btn {
-            right: 10px;
-        }
-        
-        /* Loading screen */
-        #loading {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: #333;
-            color: white;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            z-index: 9999;
-        }
-        
-        /* Shadow effect for pages */
-        .shadow {
-            box-shadow: 0 0 20px rgba(0,0,0,0.5);
-        }
-    </style>
+#flipbook-container {
+  width: 90%;
+  height: 90vh;
+  position: relative;
+  margin: auto;
+}
+
+#flipbook {
+  width: 100%;
+  height: 100%;
+  box-shadow: 0 0 40px rgba(0, 0, 0, 0.8); /* Book outer shadow */
+}
+
+.hard {
+  background: #000;
+  color: white;
+  text-align: center;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 3px;
+  box-shadow: inset 0 0 5px #666;
+}
+
+.page {
+  background-color: white;
+  background-size: contain;
+  background-position: center;
+  background-repeat: no-repeat;
+  position: relative;
+  border-radius: 1px;
+}
+
+/* Page fold & shadow */
+.page-wrapper {
+  -webkit-perspective: 2000px;
+  -moz-perspective: 2000px;
+  perspective: 2000px;
+}
+
+.shadow {
+  box-shadow: 0 0 20px rgba(0,0,0,0.5);
+}
+
+/* Gradient shadow for inner binding */
+.turn-page.even:before {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 20px;
+  height: 100%;
+  background: linear-gradient(to right, rgba(0,0,0,0), rgba(0,0,0,0.2));
+}
+
+.turn-page.odd:after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 20px;
+  height: 100%;
+  background: linear-gradient(to left, rgba(0,0,0,0), rgba(0,0,0,0.2));
+}
+
+.page-content {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  padding: 20px;
+  box-sizing: border-box;
+}
+
+.audio-controls {
+  position: absolute;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 80%;
+  background-color: rgba(0, 0, 0, 0.5);
+  border-radius: 10px;
+  padding: 10px;
+  transition: opacity 0.3s ease;
+}
+
+.audio-controls.playing {
+  background-color: rgba(0, 100, 0, 0.5);
+}
+
+.audio-controls.waiting {
+  opacity: 0.6;
+}
+
+.audio-player {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.play-button {
+  background: white;
+  color: black;
+  border: none;
+  border-radius: 50%;
+  width: 30px;
+  height: 30px;
+  font-size: 14px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.progress-container {
+  flex-grow: 1;
+  height: 8px;
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: 4px;
+  position: relative;
+  cursor: pointer;
+}
+
+.progress-bar {
+  height: 100%;
+  background: white;
+  border-radius: 4px;
+  width: 0%;
+}
+
+.time-display {
+  color: white;
+  font-size: 12px;
+  min-width: 60px;
+  text-align: right;
+}
+
+.page-number {
+  position: absolute;
+  bottom: 10px;
+  font-size: 12px;
+  color: #888;
+}
+
+.left-page .page-number {
+  right: 10px;
+}
+
+.right-page .page-number {
+  left: 10px;
+}
+
+/* Navigation buttons */
+.nav-button {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  background: rgba(0,0,0,0.5);
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  font-size: 20px;
+  cursor: pointer;
+  z-index: 999;
+  transition: background 0.3s ease;
+}
+
+.nav-button:hover {
+  background: rgba(0,0,0,0.8);
+}
+
+#prev-btn {
+  left: 10px;
+}
+
+#next-btn {
+  right: 10px;
+}
+
+/* Book spine shadow */
+.book-spine {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  height: 100%;
+  width: 10px;
+  background: rgba(0,0,0,0.5);
+  z-index: -1;
+  box-shadow: 0 0 15px 5px rgba(0,0,0,0.3);
+}
+
+/* Loading screen */
+#loading {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: #333;
+  color: white;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999;
+}
+
+.loading-spinner {
+  border: 5px solid rgba(255, 255, 255, 0.3);
+  border-radius: 50%;
+  border-top: 5px solid white;
+  width: 40px;
+  height: 40px;
+  animation: spin 1s linear infinite;
+  margin-bottom: 20px;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Title styles similar to image */
+.poem-title {
+  font-family: 'Times New Roman', Times, serif;
+  font-size: 18px;
+  color: #333;
+  margin-bottom: 30px;
+  text-align: center;
+}
+
+.poem-author {
+  font-size: 14px;
+  color: #555;
+  text-align: center;
+  margin-top: -15px;
+  margin-bottom: 30px;
+}
+
+.poem-content {
+  font-family: 'Times New Roman', Times, serif;
+  font-size: 15px;
+  line-height: 1.6;
+  text-align: left;
+  width: 80%;
+  max-width: 500px;
+  white-space: pre-line;
+}
+</style>
 </head>
 <body>
-    <div id="loading">Loading your poetry book...</div>
+<div id="loading">
+  <div class="loading-spinner"></div>
+  <div>Loading your poetry book...</div>
+</div>
+
+<div id="flipbook-container">
+  <button id="prev-btn" class="nav-button">←</button>
+  <div id="flipbook"></div>
+  <button id="next-btn" class="nav-button">→</button>
+  <div class="book-spine"></div>
+</div>
+
+<script>
+// Page configuration - actual content with poems and titles
+const pages = [
+  // Cover
+  { image: 'pages/cover.jpeg' },
+  
+  // Poetry pages
+  {
+    id: 12,
+    image: 'pages/page12.jpg',
+    audio: 'audio/page12.mp3',
+  },
+  {
+    id: 13,
+    image: 'pages/page13.jpg',
+    audio: 'audio/page13.mp3',
+  },
+  {
+    id: 14,
+    image: 'pages/page14.jpg',
+    audio: 'audio/page14.mp3',
+  },
+  {
+    id: 15,
+  
+    image: 'pages/page15.jpg',
+    audio: 'audio/page15.mp3',
+  },
+  
+  // Back pages
+  { type: 'hard', content: 'Thank You For Reading', bgColor: '#4a148c' },
+  { type: 'hard', content: '', bgColor: '#000' }
+];
+
+// Audio players and states registry
+const audioPlayers = {};
+const audioStates = {};
+
+// Track asset loading
+let totalAssets = 0;
+let loadedAssets = 0;
+const audioFiles = [];
+const imageFiles = [];
+
+// Function to format time in MM:SS
+function formatTime(seconds) {
+  const minutes = Math.floor(seconds / 60);
+  const remainingSeconds = Math.floor(seconds % 60);
+  return `${minutes}:${remainingSeconds < 10 ? '0' : ''}${remainingSeconds}`;
+}
+
+// Function to create custom audio player
+function createCustomAudioPlayer(pageId, audioSrc) {
+  const audioContainer = $('<div>', {
+    class: 'audio-controls',
+    id: `controls-${pageId}`
+  });
+  
+  const audioPlayer = $('<div>', {
+    class: 'audio-player'
+  });
+  
+  const playButton = $('<button>', {
+    class: 'play-button',
+    html: '▶',
+    'data-page-id': pageId
+  });
+  
+  const progressContainer = $('<div>', {
+    class: 'progress-container',
+    'data-page-id': pageId
+  });
+  
+  const progressBar = $('<div>', {
+    class: 'progress-bar',
+    id: `progress-${pageId}`
+  });
+  
+  const timeDisplay = $('<div>', {
+    class: 'time-display',
+    id: `time-${pageId}`,
+    text: '0:00'
+  });
+  
+  // Create actual audio element (hidden)
+  const audio = $('<audio>', {
+    id: `audio-${pageId}`,
+    preload: 'auto'
+  });
+  
+  $('<source>', {
+    src: audioSrc,
+    type: 'audio/mpeg'
+  }).appendTo(audio);
+  
+  // Build the player structure
+  progressContainer.append(progressBar);
+  audioPlayer.append(playButton, progressContainer, timeDisplay);
+  audioContainer.append(audioPlayer, audio);
+  
+  // Store reference to audio player
+  audioPlayers[pageId] = audio[0];
+  
+  // Initialize audio state
+  audioStates[pageId] = {
+    isPlaying: false,
+    duration: 0,
+    currentTime: 0
+  };
+  
+  // Set up event listeners once audio is loaded
+  audio[0].addEventListener('loadedmetadata', function() {
+    audioStates[pageId].duration = audio[0].duration;
+    $(`#time-${pageId}`).text(`0:00 / ${formatTime(audio[0].duration)}`);
     
-    <div id="flipbook-container">
-        <button id="prev-btn" class="nav-button">←</button>
-        <div id="flipbook"></div>
-        <button id="next-btn" class="nav-button">→</button>
-    </div>
-
-    <script>
-        // Page configuration - actual content with poems and titles
-        const pages = [
-            // Cover
-            { type: 'hard', content: 'Poetry Collection', bgColor: '#b71c1c' },
-
-            // Poetry pages
-            { 
-                id: 12, 
-                image: 'pages/page12.jpg', 
-                audio: 'audio/page12.mp3',
-              
-            },
-            { 
-                id: 13, 
-                image: 'pages/page13.jpg', 
-                audio: 'audio/page13.mp3',
-                
-            },
-            { 
-                id: 14, 
-                image: 'pages/page14.jpg', 
-                audio: 'audio/page14.mp3',
-            },
-            { 
-                id: 15, 
-                image: 'pages/page15.jpg', 
-                audio: 'audio/page15.mp3',
-            },
-            // Back pages
-            { type: 'hard', content: 'Thank You For Reading', bgColor: '#4a148c' },
-            { type: 'hard', content: '', bgColor: '#000' }
-        ];
-        
-        // Audio players registry
-        const audioPlayers = {};
-        
-        // Function to create all pages
-        function createPages() {
-            $('#flipbook').empty();
-            
-            pages.forEach((page, index) => {
-                if (page.type === 'hard') {
-                    // Create hard cover pages
-                    const hardPage = $('<div>', {
-                        class: 'hard',
-                        css: { backgroundColor: page.bgColor || '#000' }
-                    }).append(
-                        $('<div>', {
-                            class: 'page-content',
-                            html: `<h1>${page.content}</h1>`
-                        })
-                    );
-                    
-                    $('#flipbook').append(hardPage);
-                } else {
-                    // Create content pages
-                    const pageClass = index % 2 === 0 ? 'left-page' : 'right-page';
-                    
-                    // Create page div - try background image first, fall back to styled content
-                    const pageDiv = $('<div>', {
-                        class: `page ${pageClass}`,
-                        'data-page-id': page.id
-                    });
-                    
-                    // Try to preload image
-                    const img = new Image();
-                    img.onload = function() {
-                        pageDiv.css('background-image', `url('${page.image}')`);
-                    };
-                    img.onerror = function() {
-                        // If image fails, create styled content
-                        pageDiv.css({
-                            'background-image': 'none',
-                            'background-color': 'white'
-                        });
-                    };
-                    img.src = page.image;
-
-                    // Create content container
-                    const contentDiv = $('<div>', {
-                        class: 'page-content'
-                    });
-                    
-                    // Add title if available
-                    if (page.title) {
-                        contentDiv.append(
-                            $('<h2>', {
-                                text: page.title,
-                                css: {
-                                    'text-align': 'center',
-                                    'margin-bottom': '20px'
-                                }
-                            })
-                        );
-                    }
-                    
-                    // Add poem content with proper formatting
-                    if (page.content) {
-                        const poemText = $('<div>', {
-                            css: {
-                                'white-space': 'pre-line',
-                                'text-align': 'center',
-                                'font-family': 'Georgia, serif',
-                                'font-size': '16px',
-                                'line-height': '1.6'
-                            },
-                            text: page.content
-                        });
-                        
-                        contentDiv.append(poemText);
-                    }
-                    
-                                    
-                    pageDiv.append(contentDiv);
-                    
-                    // Create audio controls if audio file exists
-                    if (page.audio) {
-                        const audioControls = $('<div>', {
-                            class: 'audio-controls',
-                            id: `controls-${page.id}`
-                        });
-                        
-                        const audio = $('<audio>', {
-                            controls: true,
-                            id: `audio-${page.id}`
-                        });
-                        
-                        $('<source>', {
-                            src: page.audio,
-                            type: 'audio/mpeg'
-                        }).appendTo(audio);
-                        
-                        audio.appendTo(audioControls);
-                        audioControls.appendTo(pageDiv);
-                        
-                        // Store reference to audio player
-                        audioPlayers[page.id] = audio[0];
-                    }
-                    
-                    $('#flipbook').append(pageDiv);
-                }
-            });
+    // Count loaded assets
+    loadedAssets++;
+    updateLoadingProgress();
+  });
+  
+  // Update progress bar and time during playback
+  audio[0].addEventListener('timeupdate', function() {
+    const currentTime = audio[0].currentTime;
+    const duration = audio[0].duration;
+    const progressPercentage = (currentTime / duration) * 100;
+    
+    $(`#progress-${pageId}`).css('width', `${progressPercentage}%`);
+    $(`#time-${pageId}`).text(`${formatTime(currentTime)} / ${formatTime(duration)}`);
+    
+    audioStates[pageId].currentTime = currentTime;
+  });
+  
+  // Handle play/pause button clicks
+  playButton.on('click', function() {
+    const audio = audioPlayers[pageId];
+    
+    if (audioStates[pageId].isPlaying) {
+      audio.pause();
+      $(this).html('▶');
+      audioStates[pageId].isPlaying = false;
+      $(`#controls-${pageId}`).removeClass('playing');
+    } else {
+      // Pause all other audio first
+      Object.keys(audioPlayers).forEach(id => {
+        if (id !== pageId.toString() && audioStates[id].isPlaying) {
+          audioPlayers[id].pause();
+          $(`#controls-${id} .play-button`).html('▶');
+          audioStates[id].isPlaying = false;
+          $(`#controls-${id}`).removeClass('playing');
         }
+      });
+      
+      audio.play().catch(e => console.warn("Audio play error:", e));
+      $(this).html('❚❚');
+      audioStates[pageId].isPlaying = true;
+      $(`#controls-${pageId}`).addClass('playing');
+    }
+  });
+  
+  // Handle clicking on the progress bar to seek
+  progressContainer.on('click', function(e) {
+    const audio = audioPlayers[pageId];
+    const progressBar = $(this);
+    const clickPosition = (e.pageX - progressBar.offset().left) / progressBar.width();
+    const seekTime = clickPosition * audio.duration;
+    
+    audio.currentTime = seekTime;
+  });
+  
+  // Handle audio end
+  audio[0].addEventListener('ended', function() {
+    $(`#controls-${pageId} .play-button`).html('▶');
+    audioStates[pageId].isPlaying = false;
+    $(`#controls-${pageId}`).removeClass('playing');
+    
+    // Check if there's a next page to play
+    const currentView = $('#flipbook').turn('view');
+    const leftPageNum = currentView[0] - 1;
+    const rightPageNum = currentView[1] - 1;
+    
+    // If this was the left page, play the right page next
+    if (leftPageNum >= 0 && leftPageNum < pages.length && 
+        pages[leftPageNum].id === pageId &&
+        rightPageNum >= 0 && rightPageNum < pages.length && 
+        pages[rightPageNum].id) {
+      
+      const rightPageId = pages[rightPageNum].id;
+      const rightAudio = audioPlayers[rightPageId];
+      
+      if (rightAudio) {
+        setTimeout(() => {
+          rightAudio.play().catch(e => console.warn("Audio play error:", e));
+          $(`#controls-${rightPageId} .play-button`).html('❚❚');
+          audioStates[rightPageId].isPlaying = true;
+          $(`#controls-${rightPageId}`).addClass('playing');
+        }, 500);
+      }
+    }
+  });
+  
+  return audioContainer;
+}
+
+// Function to preload assets and track progress
+function preloadAssets() {
+  // Count total assets (images + audio)
+  pages.forEach(page => {
+    if (page.image) {
+      totalAssets++;
+      imageFiles.push(page.image);
+    }
+    if (page.audio) {
+      totalAssets++;
+      audioFiles.push(page.audio);
+    }
+  });
+  
+  // Preload images
+  imageFiles.forEach(src => {
+    const img = new Image();
+    img.onload = function() {
+      loadedAssets++;
+      updateLoadingProgress();
+    };
+    img.onerror = function() {
+      loadedAssets++; // Count errors as loaded to avoid hanging
+      console.warn(`Failed to load image: ${src}`);
+      updateLoadingProgress();
+    };
+    img.src = src;
+  });
+  
+  // Audio files will be loaded during player creation
+}
+
+// Update loading progress
+function updateLoadingProgress() {
+  const progressPercent = Math.min(100, Math.round((loadedAssets / totalAssets) * 100));
+  
+  // Update loading screen
+  $('#loading div:last-child').text(`Loading your poetry book... ${progressPercent}%`);
+  
+  // When all assets are loaded, initialize the flipbook
+  if (loadedAssets >= totalAssets) {
+    // Clear the loading timeout if it exists
+    if (window.loadingTimeout) {
+      clearTimeout(window.loadingTimeout);
+    }
+    
+    // Initialize the flipbook and hide loading screen
+    initializeFlipbook();
+    $('#loading').fadeOut();
+  }
+}
+
+// Function to create all pages
+function createPages() {
+  $('#flipbook').empty();
+  pages.forEach((page, index) => {
+    if (page.type === 'hard') {
+      // Create hard cover pages
+      const hardPage = $('<div>', {
+        class: 'hard shadow',
+        css: { backgroundColor: page.bgColor || '#000' }
+      }).append(
+        $('<div>', {
+          class: 'page-content',
+          html: `<h1>${page.content}</h1>`
+        })
+      );
+      $('#flipbook').append(hardPage);
+    } else {
+      // Create content pages
+      const pageClass = index % 2 === 0 ? 'left-page' : 'right-page';
+      
+      // Create page div with shadow class
+      const pageDiv = $('<div>', {
+        class: `page ${pageClass} shadow`,
+        'data-page-id': page.id
+      });
+
+      // Set background image if already loaded
+      if (page.image) {
+        pageDiv.css('background-image', `url('${page.image}')`);
+      }
+
+      // Create content container
+      const contentDiv = $('<div>', {
+        class: 'page-content'
+      });
+
+      // Add title if available
+      if (page.title) {
+        // Add author if available
+        const titleSection = $('<div>', {
+          class: 'title-section'
+        });
         
-        // Function to initialize the flipbook
-        function initializeFlipbook() {
-            try {
-                // First create the pages
-                createPages();
-                
-                // Initialize turn.js
-                $('#flipbook').turn({
-                    width: $('#flipbook-container').width() * 0.9,
-                    height: $('#flipbook-container').height() * 0.9,
-                    elevation: 50,
-                    gradients: true,
-                    autoCenter: true,
-                    display: 'double',
-                    acceleration: true,
-                    page: 2, // Start at page 2 (first poem)
-                    when: {
-                        turning: function(event, page, view) {
-                            // Stop all audio when turning page
-                            Object.values(audioPlayers).forEach(player => {
-                                player.pause();
-                                player.currentTime = 0;
-                                player.onended = null;
-                            });
-                        },
-                        turned: function(event, page, view) {
-                            playVisiblePagesAudio(view);
-                            
-                            // Update navigation buttons
-                            updateNavButtons();
-                        }
-                    }
-                });
-                
-                // Function to play audio for visible pages
-                function playVisiblePagesAudio(view) {
-                    // Hide all audio controls first
-                    $('.audio-controls').hide();
-                    
-                    // Show audio controls for visible pages
-                    view.forEach(pageNum => {
-                        // Get the actual page data (accounting for cover pages)
-                        const actualIndex = pageNum - 1;
-                        if (actualIndex >= 0 && actualIndex < pages.length && pages[actualIndex].id) {
-                            const pageId = pages[actualIndex].id;
-                            $(`#controls-${pageId}`).show();
-                        }
-                    });
-                    
-                    // Play audio for the left page (if available)
-                    const leftPageNum = view[0] - 1;
-                    if (leftPageNum >= 0 && leftPageNum < pages.length && pages[leftPageNum].id) {
-                        const leftPageId = pages[leftPageNum].id;
-                        const leftAudio = audioPlayers[leftPageId];
-                        
-                        if (leftAudio) {
-                            leftAudio.play().catch(e => console.warn("Audio play error:", e));
-                            
-                            // When left page audio ends, play right page audio
-                            const rightPageNum = view[1] - 1;
-                            if (rightPageNum >= 0 && rightPageNum < pages.length && pages[rightPageNum].id) {
-                                const rightPageId = pages[rightPageNum].id;
-                                const rightAudio = audioPlayers[rightPageId];
-                                
-                                if (rightAudio) {
-                                    leftAudio.onended = function() {
-                                        rightAudio.play().catch(e => console.warn("Audio play error:", e));
-                                    };
-                                }
-                            }
-                        }
-                    }
-                }
-                
-                // Navigation buttons
-                $('#prev-btn').click(function() {
-                    $('#flipbook').turn('previous');
-                });
-                
-                $('#next-btn').click(function() {
-                    $('#flipbook').turn('next');
-                });
-                
-                // Update navigation buttons visibility
-                function updateNavButtons() {
-                    const currentPage = $('#flipbook').turn('page');
-                    const totalPages = $('#flipbook').turn('pages');
-                    
-                    // Show/hide previous button
-                    if (currentPage <= 1) {
-                        $('#prev-btn').hide();
-                    } else {
-                        $('#prev-btn').show();
-                    }
-                    
-                    // Show/hide next button
-                    if (currentPage >= totalPages) {
-                        $('#next-btn').hide();
-                    } else {
-                        $('#next-btn').show();
-                    }
-                }
-                
-                // Initial play for visible pages
-                setTimeout(function() {
-                    const view = $('#flipbook').turn('view');
-                    playVisiblePagesAudio(view);
-                    updateNavButtons();
-                    $('#loading').fadeOut();
-                }, 1000);
-                
-                // Handle window resize
-                $(window).resize(function() {
-                    // Resize the flipbook proportionally
-                    $('#flipbook').turn('size', 
-                        $('#flipbook-container').width() * 0.9,
-                        $('#flipbook-container').height() * 0.9
-                    );
-                });
-                
-            } catch (error) {
-                console.error("Error initializing flipbook:", error);
-                $('#loading').html("Error loading flipbook: " + error.message);
-            }
-        }
+        titleSection.append(
+          $('<h2>', {
+            class: 'poem-title',
+            text: page.title
+          })
+        );
         
-        // Load turn.js dynamically
-        $.getScript("https://cdnjs.cloudflare.com/ajax/libs/turn.js/4.1.0/turn.min.js")
-            .done(function() {
-                // When Turn.js loads successfully, initialize the flipbook
-                $(document).ready(function() {
-                    setTimeout(initializeFlipbook, 500);
-                });
+        if (page.author) {
+          titleSection.append(
+            $('<div>', {
+              class: 'poem-author',
+              text: page.author
             })
-            .fail(function() {
-                // If CDN fails, try loading from GitHub
-                $.ajax({
-                    url: 'https://raw.githubusercontent.com/blasten/turn.js/master/turn.js',
-                    dataType: 'text',
-                    success: function(data) {
-                        // Create script element with the Turn.js code
-                        const script = document.createElement('script');
-                        script.textContent = data;
-                        document.body.appendChild(script);
-                        
-                        // Initialize after ensuring the script is loaded
-                        setTimeout(initializeFlipbook, 500);
-                    },
-                    error: function() {
-                        // If all attempts fail, show error
-                        $('#loading').html("Failed to load Turn.js library. Please download it manually.");
-                    }
-                });
-            });
-    </script>
+          );
+        }
+        
+        contentDiv.append(titleSection);
+      }
+
+      // Add poem content with proper formatting
+      if (page.content) {
+        const poemText = $('<div>', {
+          class: 'poem-content',
+          css: {
+            'white-space': 'pre-line'
+          },
+          text: page.content
+        });
+        contentDiv.append(poemText);
+      }
+
+      // Add page number
+      contentDiv.append(
+        $('<div>', {
+          class: 'page-number',
+          text: page.id
+        })
+      );
+
+      pageDiv.append(contentDiv);
+
+      // Create custom audio player if audio file exists
+      if (page.audio) {
+        const audioControls = createCustomAudioPlayer(page.id, page.audio);
+        pageDiv.append(audioControls);
+      }
+
+      $('#flipbook').append(pageDiv);
+    }
+  });
+}
+
+// Function to initialize the flipbook
+function initializeFlipbook() {
+  try {
+    // First create the pages
+    createPages();
+    
+    // Initialize turn.js
+    $('#flipbook').turn({
+      width: $('#flipbook-container').width() * 0.9,
+      height: $('#flipbook-container').height() * 0.9,
+      elevation: 50,
+      gradients: true,
+      autoCenter: true,
+      display: 'double',
+      acceleration: true,
+      page: 2, // Start at page 2 (first poem)
+      when: {
+        turning: function(event, page, view) {
+          // Stop all audio when turning page
+          Object.keys(audioPlayers).forEach(pageId => {
+            const audio = audioPlayers[pageId];
+            audio.pause();
+            audio.currentTime = 0;
+            $(`#controls-${pageId} .play-button`).html('▶');
+            audioStates[pageId].isPlaying = false;
+            $(`#controls-${pageId}`).removeClass('playing');
+          });
+          
+          // Add spine shadow during page turn for realism
+          $('.book-spine').css('box-shadow', '0 0 25px 10px rgba(0,0,0,0.4)');
+          setTimeout(() => {
+            $('.book-spine').css('box-shadow', '0 0 15px 5px rgba(0,0,0,0.3)');
+          }, 500);
+        },
+        turned: function(event, page, view) {
+          // Show audio controls for visible pages
+          showVisiblePagesAudio(view);
+          
+          // Update navigation buttons
+          updateNavButtons();
+          
+          // Enhance shadow effect
+          enhancePageShadows();
+        }
+      }
+    });
+    
+    // Function to enhance page shadows based on the current state
+    function enhancePageShadows() {
+      // Get the current page
+      const currentPage = $('#flipbook').turn('page');
+      const totalPages = $('#flipbook').turn('pages');
+      
+      // Add depth shadow to pages based on position in book
+      $('.page').each(function() {
+        const pageElement = $(this);
+        const pageNum = pageElement.parent().attr('page');
+        
+        if (pageNum) {
+          const depth = Math.abs((currentPage - pageNum) / totalPages);
+          const shadowIntensity = Math.min(0.5, depth * 2);
+          
+          if (pageNum < currentPage) {
+            // Left side (already turned)
+            pageElement.css('box-shadow', `inset -5px 0 10px rgba(0,0,0,${shadowIntensity})`);
+          } else {
+            // Right side (yet to turn)
+            pageElement.css('box-shadow', `inset 5px 0 10px rgba(0,0,0,${shadowIntensity})`);
+          }
+        }
+      });
+    }
+    
+    // Function to handle audio for visible pages
+    function showVisiblePagesAudio(view) {
+      // Hide all audio controls first
+      $('.audio-controls').hide();
+      
+      // Show audio controls for visible pages
+      view.forEach(pageNum => {
+        // Get the actual page data (accounting for cover pages)
+        const actualIndex = pageNum - 1;
+        if (actualIndex >= 0 && actualIndex < pages.length && pages[actualIndex].id) {
+          const pageId = pages[actualIndex].id;
+          $(`#controls-${pageId}`).show();
+        }
+      });
+    }
+    
+    // Navigation buttons
+    $('#prev-btn').click(function() {
+      $('#flipbook').turn('previous');
+    });
+    
+    $('#next-btn').click(function() {
+      $('#flipbook').turn('next');
+    });
+    
+    // Update navigation buttons visibility
+    function updateNavButtons() {
+      const currentPage = $('#flipbook').turn('page');
+      const totalPages = $('#flipbook').turn('pages');
+      
+      // Show/hide previous button
+      if (currentPage <= 1) {
+        $('#prev-btn').hide();
+      } else {
+        $('#prev-btn').show();
+      }
+      
+      // Show/hide next button
+      if (currentPage >= totalPages) {
+        $('#next-btn').hide();
+      } else {
+        $('#next-btn').show();
+      }
+    }
+    
+    // Initial setup for visible pages
+    setTimeout(function() {
+      const view = $('#flipbook').turn('view');
+      showVisiblePagesAudio(view);
+      updateNavButtons();
+      enhancePageShadows();
+    }, 200);
+    
+    // Handle window resize
+    $(window).resize(function() {
+      // Resize the flipbook proportionally
+      $('#flipbook').turn('size',
+        $('#flipbook-container').width() * 0.9,
+        $('#flipbook-container').height() * 0.9
+      );
+      
+      // Reposition the book spine
+      $('.book-spine').css('left', $('#flipbook').width() / 2 + $('#flipbook').offset().left);
+    });
+    
+    // Position the book spine initially
+    setTimeout(() => {
+      $('.book-spine').css('left', $('#flipbook').width() / 2 + $('#flipbook').offset().left);
+    }, 200);
+    
+  } catch (error) {
+    console.error("Error initializing flipbook:", error);
+    $('#loading').html("Error loading flipbook: " + error.message);
+  }
+}
+
+// Start loading process
+$(document).ready(function() {
+  // Set a backup timeout in case asset loading takes too long
+  window.loadingTimeout = setTimeout(function() {
+    initializeFlipbook();
+    $('#loading').fadeOut();
+  }, 5000); // 5 seconds maximum wait
+  
+  // Start preloading assets
+  preloadAssets();
+});
+</script>
 </body>
 </html>
